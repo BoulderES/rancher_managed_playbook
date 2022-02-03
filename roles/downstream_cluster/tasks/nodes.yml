@@ -1,0 +1,63 @@
+---
+
+- name: Get current nodes from Rancher Control Plane
+  uri:
+    url: "{{ cluster_rancher_api }}/clusters/{{ clusteridentifier }}/nodes"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+  register: cluster_nodes
+  check_mode: no
+
+- name: Show already added nodes
+  debug:
+    msg: "{{ cluster_nodes | json_query(\"json.data[*].hostname\") }}"
+
+- name: Set differences
+  set_fact:
+    diffitems: "{{ groups['k8s_cluster'] | difference(cluster_nodes | json_query(\"json.data[*].hostname\")) }}"
+
+- name: Show nodes which are going to be added
+  debug:
+    var: diffitems
+
+- name: Show ROLES which are going to be added
+  debug:
+    var: hostvars[item].k8s_roles
+  when: item in diffitems
+  with_items:
+    - "{{ groups['k8s_cluster'] }}"
+
+- name: Show COMMAND which are going to be added
+  debug:
+    msg: "{{ clusternodecommand }}{% for role in hostvars[item].k8s_roles %} --{{ role }}{% endfor %}"
+  when: item in diffitems
+  with_items:
+    - "{{ groups['k8s_cluster'] }}"
+
+- name: Add Nodes when not already added
+  delegate_to: "{{ item }}"
+  command: "{{clusternodecommand }}{% for role in hostvars[item].k8s_roles %} --{{ role }}{% endfor %}"
+  when: item in diffitems
+  with_items:
+    - "{{ groups['k8s_cluster'] }}"
+  ignore_errors: yes
+
+
+- name: Get KubeConfig from Rancher Control Plane
+  uri:
+    url: "{{ cluster_rancher_api }}/clusters/{{ clusteridentifier }}?action=generateKubeconfig"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+    body_format: json
+    status_code: 200
+    method: POST
+  register: kubeconfig
+  when: inventory_hostname == ansible_play_hosts[0]
+  until: kubeconfig.failed != true
+  retries: 100
+  delay: 15
+  ignore_errors: yes

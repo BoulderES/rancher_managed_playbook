@@ -1,0 +1,15 @@
+---
+
+- name: Create Storage Class manifests
+  template:
+    src: templates/storageClassProvisioner.yml.j2
+    dest: /tmp/storageClassProvisioner.yml
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Storage class creation
+  shell: "kubectl apply -f /tmp/storageClassProvisioner.yml"
+
+
+

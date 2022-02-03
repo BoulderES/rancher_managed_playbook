@@ -1,0 +1,98 @@
+---
+- name: Docker - Install epel repository
+  yum_repository:
+    file: epel
+    name: epel
+    description: Extra Packages for Enterprise Linux $releasever - $basearch
+    metalink: https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
+    enabled: 1
+    gpgcheck: 1
+    gpgkey: http://mirror.uv.es/mirror/fedora-epel/RPM-GPG-KEY-EPEL-$releasever
+  tags:
+    - docker
+
+- name: Docker - Install docker-ce repository
+  yum_repository:
+    file: docker-ce
+    name: docker-ce-stable
+    async: 1
+    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+    enabled: 1
+    gpgcheck: 1
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    description: Docker CE Stable
+  tags:
+    - docker
+
+- name: Docker - Install packages
+  become: true
+  yum:
+    name:
+      - python3
+      - python3-docker
+      - python3-pip
+      - docker-ce
+    state: latest
+  tags:
+    - docker
+
+- name: Docker - Create /etc/systemd/system/docker.service.d directory if it doesnt exist
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    mode: 0755
+  tags:
+    - docker
+
+- name: Docker - Create /etc/docker directory if it doesnt exist
+  file:
+    path: /etc/docker
+    state: directory
+    mode: 0755
+  tags:
+    - docker
+
+- name: Docker - Copy docker daemon configuration file
+  template:
+    src: docker.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - docker
+
+- name: Docker - Copy docker proxy configuration
+  template:
+    src: docker.proxy.j2
+    dest: /etc/systemd/system/docker.service.d/http-proxy.conf
+    owner: root
+    group: root
+    mode: 0644
+  register: docker_config
+  tags:
+    - docker
+
+- name: Docker - Create /root/.docker directory if it doesnt exist
+  file:
+    path: /root/.docker
+    state: directory
+    mode: 0755
+  tags:
+    - docker
+
+- name: Docker - Restart docker service
+  service:
+    name: docker
+    state: restarted
+  when: docker_config.changed
+  tags:
+    - docker
+
+- name: Docker - Enable service and start docker service
+  service:
+    name: docker
+    enabled: yes
+    state: started
+  tags:
+    - docker

@@ -1,0 +1,22 @@
+---
+
+- name: Create or get Cluster
+  delegate_to: localhost
+  import_tasks: cluster.yml
+  when: inventory_hostname == ansible_play_hosts[0]
+
+- name: Nodes
+  delegate_to: localhost
+  import_tasks: nodes.yml
+  when: inventory_hostname == ansible_play_hosts[0]
+
+- name: Kubeconfig
+  import_tasks: kubeconfig.yml
+
+- name: Storage Class
+  import_tasks: storageClass.yml
+  when: inventory_hostname == ansible_play_hosts[0]
+
+- name: Ingress Nginx
+  import_tasks: nginx.yml
+  when: inventory_hostname == ansible_play_hosts[0]

@@ -1,0 +1,6 @@
+---
+- name: Create /etc/kubernetes directory if it doesnt exist
+  file:
+    path: /etc/kubernetes
+    state: directory
+    mode: 0755

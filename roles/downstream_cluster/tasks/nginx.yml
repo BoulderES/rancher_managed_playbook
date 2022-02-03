@@ -1,0 +1,12 @@
+---
+- name: Install Nginx
+  shell: "kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.1.1/deploy/static/provider/baremetal/deploy.yaml"
+  ignore_errors: yes
+
+- name: Get Nginx NodePort
+  shell: "kubectl get  svc -ningress-nginx -ojson | jq '.items[].spec.ports'"
+  register: nodeport
+
+- name: Print Nginx NodePort
+  debug:
+    var: nodeport

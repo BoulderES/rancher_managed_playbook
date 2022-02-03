@@ -1,0 +1,197 @@
+---
+- name: Get all Cluster from Rancher Control Plane
+  uri:
+    url: "{{ cluster_rancher_api }}/clusters"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+  register: rancher_cluster
+  check_mode: no
+
+- name: Set Fact for current cluster
+  delegate_to: localhost
+  set_fact:
+    existingCluster: "{{ rancher_cluster | json_query(\"json.data[?name == '\" + custom_cluster_name + \"']\") }}"
+  check_mode: no
+
+- name: Set Fact for current cluster version, if it already exists
+  delegate_to: localhost
+  set_fact:
+    applied_cluster_networkpolicy: "{{ existingCluster[0]['enableNetworkPolicy'] }}"
+    applied_cluster_version: "{{ existingCluster[0]['rancherKubernetesEngineConfig']['kubernetesVersion'] }}"
+    applied_cluster_ingress: "{{ existingCluster[0]['rancherKubernetesEngineConfig']['ingress']['provider'] }}"
+    applied_cluster_psp_template: "{{ existingCluster[0]['defaultPodSecurityPolicyTemplateId'] }}"
+    applied_cluster_id: "{{ existingCluster[0]['id'] }}"
+  check_mode: no
+  when:
+  - (existingCluster | length) > 0
+
+- name: Print cluster facts from the Rancher API
+  debug:
+    msg:
+      - "|---------------------------------------------------------------------------------------------------"
+      - "|    Currently applied cluster version:                     {{ applied_cluster_version | lower }}"
+      - "|      -> Desired cluster version configuration:            {{ cluster_kubernetes_version | lower }}"
+      - "|---------------------------------------------------------------------------------------------------"
+      - "|    Currently applied cluster networkpolicy configuration: {{ applied_cluster_networkpolicy | lower }}"
+      - "|      -> Desired cluster networkpolicy configuration:      {{ cluster_enable_network_policy | lower }}"
+      - "|---------------------------------------------------------------------------------------------------"
+      - "|    Currently applied cluster ingress controller:          {{ applied_cluster_ingress | lower }}"
+      - "|      -> Desired cluster ingress controller configuration: {{ clusters_ingress_provider | lower }}"
+      - "|---------------------------------------------------------------------------------------------------"
+      - "|    Currently applied cluster PSP template:                {{ applied_cluster_psp_template | lower }}"
+      - "|      -> Desired cluster PSP template configuration:       {{ clusters_default_psp | lower }}"
+      - "|---------------------------------------------------------------------------------------------------"
+  when:
+    - (existingCluster | length) > 0
+
+- name: Cluster does not exist, create new Cluster
+  uri:
+    url: "{{ cluster_rancher_api }}/clusters"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+    body: "{{ lookup('template','cluster.json.j2') | regex_replace('\n',' ') }}"
+    body_format: json
+    status_code: 201
+    method: POST
+  register: cluster_new
+  when:
+    - (existingCluster | length) == 0
+
+- pause:
+    prompt: "The cluster configuration changed and it will be updated, are you agree? Ctr-C to exit"
+  when: |
+    ((existingCluster | length) > 0) and
+    ((cluster_enable_network_policy | lower ) != (applied_cluster_networkpolicy | lower) or
+    (cluster_kubernetes_version | lower) != (applied_cluster_version | lower) or
+    (clusters_ingress_provider | lower) != (applied_cluster_ingress | lower) or
+    (clusters_default_psp | lower) != (applied_cluster_psp_template | lower))
+
+- pause:
+    prompt: "Are you sure? Ctr-C to exit"
+  when: |
+    ((existingCluster | length) > 0) and
+    ((cluster_enable_network_policy | lower ) != (applied_cluster_networkpolicy | lower) or
+    (cluster_kubernetes_version | lower) != (applied_cluster_version | lower) or
+    (clusters_ingress_provider | lower) != (applied_cluster_ingress | lower) or
+    (clusters_default_psp | lower) != (applied_cluster_psp_template | lower))
+
+- name: Cluster does exist, check if update is requested
+  uri:
+    url: "{{ cluster_rancher_api }}/clusters/{{ applied_cluster_id }}"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+    body: "{{ lookup('template','cluster.json.j2') | regex_replace('\n',' ') }}"
+    body_format: json
+    status_code: 200
+    method: PUT
+  when: |
+      ((existingCluster | length) > 0) and
+      ((cluster_enable_network_policy | lower ) != (applied_cluster_networkpolicy | lower) or
+      (cluster_kubernetes_version | lower) != (applied_cluster_version | lower) or
+      (clusters_ingress_provider | lower) != (applied_cluster_ingress | lower) or
+      (clusters_default_psp | lower) != (applied_cluster_psp_template | lower))
+
+- name: Set fact if existing cluster
+  set_fact:
+    clusterData: "{{ existingCluster[0] }}"
+  when:
+    - (existingCluster | length) > 0
+
+- name: Set fact if new cluster
+  set_fact:
+    clusterData: "{{ cluster_new.json }}"
+  when:
+    - cluster_new is not skipped
+
+- name: Get Cluster Registration Token
+  uri:
+    url: "{{ cluster_rancher_api }}/clusterregistrationtoken?id={{ clusterData.id }}"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+  register: clusterregistrationtoken
+  check_mode: no
+
+- name: Filter for correct clusterRegistrationToken
+  set_fact:
+    clusterregistrationtoken: "{{ clusterregistrationtoken | json_query(\"json.data[?clusterId == '\" + clusterData.id + \"']\") }}"
+
+- name: Create cluster registration token when not already exists
+  uri:
+    url: "{{ cluster_rancher_api }}/clusterregistrationtoken"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+    body:
+      type: "clusterRegistrationToken"
+      clusterId: "{{ clusterData.id }}"
+    body_format: json
+    status_code: 201
+    method: POST
+  register: newclusterRegistrationToken
+  when:
+    - ( clusterregistrationtoken | length ) == 0
+
+- name: Set cluster registration token if new token
+  set_fact:
+    clusterregistrationtoken: "{{ newclusterRegistrationToken.json.token }}"
+  when:
+    - newclusterRegistrationToken is not skipped
+
+- name: Set cluster registration token if existing token
+  set_fact:
+    clusterregistrationtoken: "{{ clusterregistrationtoken[0].token }}"
+  when:
+    - newclusterRegistrationToken is skipped
+    - ( clusterregistrationtoken | length ) > 0
+
+- name: Cluster registration token
+  debug:
+    msg: "{{ clusterregistrationtoken }}"
+
+- name: Get all Node commands
+  uri:
+    url: "{{ cluster_rancher_api }}/clusterregistrationtoken?id={{ clusterData.id }}"
+    validate_certs: "{{ cluster_verify_ssl }}"
+    return_content: yes
+    headers:
+      Authorization: "Bearer {{ cluster_api_key }}"
+  register: clusternodecommand
+  check_mode: no
+  when:
+    - cluster_self_signed_certificate
+
+- name: Filter for correct cluster clusterNodeCommand
+  set_fact:
+    clusternodecommand: "{{ clusternodecommand | json_query(\"json.data[?clusterId == '\" + clusterData.id + \"']\") }}"
+  when:
+    - cluster_self_signed_certificate
+
+- name: Set cluster node command
+  set_fact:
+    clusternodecommand: "{{ clusternodecommand[0].nodeCommand }}"
+  when:
+    - cluster_self_signed_certificate
+
+
+- name: Show Cluster Node Command
+  debug:
+    msg: "{{ clusternodecommand }}"
+
+- name: Set cluster identifier
+  set_fact:
+    clusteridentifier: "{{ clusterData.id }}"
+
+- name: Cluster indentifier
+  debug:
+    var: clusteridentifier
+
+#- meta: end_play

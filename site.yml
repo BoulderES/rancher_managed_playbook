@@ -1,0 +1,9 @@
+#
+#  Cluster nodes prerequisites
+#
+- import_playbook: nodes_preq.yml
+
+#
+#  Used to deploy a downstream cluster
+#
+- import_playbook: downstream_cluster.yml

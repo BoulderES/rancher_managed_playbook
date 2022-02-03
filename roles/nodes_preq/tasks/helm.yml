@@ -1,0 +1,11 @@
+---
+#
+# Install Helm
+#
+- name: Helm - Retrieve helm binary archive
+  unarchive:
+    src: "{{ helm_url }}"
+    dest: /usr/local/bin/
+    remote_src: yes
+    creates: /usr/local/bin/helm
+    extra_opts: [ "--strip-components=1" ]

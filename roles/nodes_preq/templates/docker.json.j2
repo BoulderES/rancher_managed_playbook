@@ -1,0 +1,20 @@
+{
+  "data-root": "/opt/kubernetes/containerd",
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m",
+    "max-file": "5"
+  },
+  "default-ulimits": {
+    "nofile": {
+      "Name": "nofile",
+      "Hard": 1048576,
+      "Soft": 1048576
+    },
+    "nproc": {
+      "Name": "nproc",
+      "Hard": -1,
+      "Soft": -1
+    }
+  }
+}

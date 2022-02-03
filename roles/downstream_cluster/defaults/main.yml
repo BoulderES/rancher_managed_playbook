@@ -1,0 +1,42 @@
+---
+cluster_name: downstream_cluster
+custom_cluster_name: "{{ cluster_name | regex_replace('_','-') }}"
+cluster_rancher_manager_host: "rnc-mgmt.dev"
+cluster_rancher_api: "https://{{ cluster_rancher_manager_host }}/v3"
+cluster_verify_ssl: no
+cluster_api_key: "token-xxxx"
+cluster_enable_network_policy: true
+enable_cluster_alerting: false
+enable_cluster_monitoring: false
+cluster_kubernetes_version: "v1.22.5-rancher2-2"
+cluster_agent_version: "v2.6-head"
+network_plugin: calico
+
+# Ingress Provider (none, nginx)
+clusters_ingress_provider: "none"
+clusters_default_psp: "restricted"
+cluster_self_signed_certificate: true
+cluster_ca_checksum_param: "{{ '--ca-checksum' if cluster_self_signed_certificate else '' }}"
+cluster_use_fqdn_nodename: true
+cluster_group_inventory_name: "{{ inventory_hostname | regex_replace('rancher_') }}"
+cluster_docker_commmand_base: "sudo docker run -d --privileged --restart=unless-stopped --net=host -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run rancher/rancher-agent:{{ cluster_agent_version}} --server https://{{ cluster_rancher_manager_host }}"
+kubeconfig_root_dir: "/root/.kube"
+
+# Helm
+helm_version: "v3.5.3"
+helm_url: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
+
+# Proxy
+http_proxy: ""
+https_proxy: ""
+no_proxy: ""
+
+
+# Qnap Storage Class Provisioner Requirements
+qnap_url: 172.18.10.15
+qnap_nfshost: "{{qnap_url}}"
+qnap_shared_volume: nfs_volume
+qnap_user: nfs_user
+qnap_pass: Ch4ng3it
+qnap_storage_class_name: qnap-nfs
+qnap_provisioner_image: nineliveslater/qnap-storage-provisioner:v1.1.1.k8s-1-19

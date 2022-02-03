@@ -1,0 +1,14 @@
+---
+#
+# Packages needed and nice to have
+#
+- name: Install other util OS software
+  yum:
+    state: present
+    name:
+      - jq
+      - nfs-utils
+      - bind-utils
+      - psmisc        # killall
+      - git
+    update_cache: yes

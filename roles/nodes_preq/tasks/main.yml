@@ -1,0 +1,18 @@
+---
+
+- include_tasks: folders.yml
+
+- import_tasks: helm.yml
+  tags: helm
+
+- import_tasks: kubectl.yml
+
+- include_tasks: docker.yml
+
+- include_tasks: yum_packages.yml
+
+- include_tasks: disable_nm_cloud.yml
+
+- include_tasks: disable_firewall.yml
+
+- include_tasks: disable_selinux.yml

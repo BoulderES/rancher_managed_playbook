@@ -1,0 +1,17 @@
+#
+# Used to update the OS and to configure it to fit UNIX requirements
+#
+- name: Downstream Cluster Deployment
+  hosts: all
+  any_errors_fatal: yes
+  gather_facts: no
+  environment:
+    http_proxy: "{{ http_proxy | default('') }}"
+    https_proxy: "{{ https_proxy | default('') }}"
+    no_proxy: "{{ no_proxy | default('') }}"
+    LANG: "en_US.UTF-8"
+    LC_ALL: "en_US.UTF-8"
+  roles:
+    - downstream_cluster
+
+
