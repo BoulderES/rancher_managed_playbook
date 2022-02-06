@@ -22,15 +22,6 @@ cluster_group_inventory_name: "{{ inventory_hostname | regex_replace('rancher_')
 cluster_docker_commmand_base: "sudo docker run -d --privileged --restart=unless-stopped --net=host -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run rancher/rancher-agent:{{ cluster_agent_version}} --server https://{{ cluster_rancher_manager_host }}"
 kubeconfig_root_dir: "/root/.kube"
 
-# Helm
-helm_version: "v3.5.3"
-helm_url: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
-
-# Proxy
-http_proxy: ""
-https_proxy: ""
-no_proxy: ""
-
 
 # Qnap Storage Class Provisioner Requirements
 qnap_url: 172.18.10.15
