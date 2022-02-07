@@ -2,11 +2,13 @@
 
 - name: Create or get Cluster
   delegate_to: localhost
+  become: no
   import_tasks: cluster.yml
   when: inventory_hostname == ansible_play_hosts[0]
 
 - name: Nodes
   delegate_to: localhost
+  become: no
   import_tasks: nodes.yml
   when: inventory_hostname == ansible_play_hosts[0]
 

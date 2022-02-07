@@ -9,7 +9,4 @@
     mode: 0644
 
 - name: Storage class creation
-  shell: "kubectl apply -f /tmp/storageClassProvisioner.yml"
-
-
-
+  shell: "/usr/local/bin/kubectl apply -f /tmp/storageClassProvisioner.yml"
