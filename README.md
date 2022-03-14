@@ -15,3 +15,8 @@ A DNS server is helpful in order to guarantee the servers' visibility. For this 
 
 ***
 Before the plan execution we need a token generated in the rancher manager UI in order to authorize the api calls. The token var: 'cluster_api_key'
+
+
+## License
+
+This project is under the Apache License 2.0 - take a look to the LICENSE file for more details.
