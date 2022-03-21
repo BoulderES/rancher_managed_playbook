@@ -1,0 +1,30 @@
+# NTP servers
+pool 2.fedora.pool.ntp.org iburst
+
+# Record the rate at which the system clock gains/losses time.
+driftfile /var/lib/chrony/drift
+
+# Enable kernel RTC synchronization.
+rtcsync
+
+# In first 3 updates step the system clock instead of slew
+# if the adjustment is larger than 10 seconds.
+makestep 1.0 3
+
+bindcmdaddress 127.0.0.1
+bindcmdaddress ::1
+
+# Serve time even if not synchronized to any NTP server.
+local stratum 10
+
+keyfile /etc/chrony.keys
+
+# Disable logging of client accesses.
+noclientlog
+
+# Send a message to syslog if a clock adjustment is larger than 0.5 seconds.
+logchange 0.5
+
+logdir /var/log/chrony
+
+allow {{ lbr_ipv4_subnet }}

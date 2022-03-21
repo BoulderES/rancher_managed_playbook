@@ -1,0 +1,5 @@
+---
+
+- name: Run subscription-manager refresh
+  command:
+    cmd: subscription-manager refresh

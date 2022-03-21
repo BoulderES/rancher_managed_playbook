@@ -1,0 +1,26 @@
+---
+- name: Install chrony
+  yum:
+    state: present
+    name:
+      - chrony
+    update_cache: yes
+
+- name: Create chrony config file
+  template:
+    src: templates/chrony.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: restart chronyd
+  service:
+    name: chronyd
+    state: restarted
+
+- name: Enable chrony and make sure it is not masked
+  systemd:
+    name: chronyd
+    enabled: yes
+    masked: no

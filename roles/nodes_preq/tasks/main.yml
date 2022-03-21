@@ -1,4 +1,7 @@
 ---
+- import_tasks: common.yml
+
+- import_tasks: chrony.yml
 
 - import_tasks: folders.yml
 
