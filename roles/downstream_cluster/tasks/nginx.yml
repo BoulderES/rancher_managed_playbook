@@ -7,6 +7,9 @@
   shell: "/usr/local/bin/kubectl get  svc -ningress-nginx -ojson | jq '.items[].spec.ports'"
   register: nodeport
 
+- name: Set lbr Nginx NodePort
+  shell: "kubectl patch svc -ningress-nginx ingress-nginx-controller -p '{\"spec\": {\"ports\": [{\"nodePort\":{{lbr_nginx_nodeport}}, \"port\": 80,\"name\": \"http\"}],\"type\": \"NodePort\"}}'"
+
 - name: Print Nginx NodePort
   debug:
     var: nodeport

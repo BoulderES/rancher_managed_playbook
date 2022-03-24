@@ -1,4 +1,6 @@
 ---
+lbr_nginx_nodeport: 31103
+
 cluster_name: downstream_cluster
 custom_cluster_name: "{{ cluster_name | regex_replace('_','-') }}"
 cluster_rancher_manager_host: "rnc-mgmt.dev"
